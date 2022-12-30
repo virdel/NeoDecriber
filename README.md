@@ -23,6 +23,9 @@ You can use the following command to install some packages in the NeoDescriber f
 ``` shell
 pip install -r requirements.txt
 ```
+### Download trained model weights
+
+<a href="https://drive.google.com/file/d/1hW6u_YmdBM2acwddWmhJkQ98PHm4y5Ys/view?usp=sharing">Click</a> to download weights, and copy the folder to the project folder. 
 
 ### How to use
 
