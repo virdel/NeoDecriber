@@ -153,6 +153,25 @@ model call, nothing to install.
 }
 ```
 
+## Example output
+
+`example_result/` is a complete run on `Dublin.jpg` (General Post Office, Dublin) with the released
+weights — open `example_result/report.html` in a browser to see it:
+
+```
+example_result/
+├── result.txt          report with the generated description
+├── result.json         structured data
+├── report.html         interactive page
+├── input.jpg           input image used by the report
+├── *.jpg               annotated image per detection stage
+├── report/*.jpg        downscaled stage images used by the page
+└── <stage>/*.jpg       cropped elements
+```
+
+It classified the building as Neoclassical (99.98%) with a colonnade, a triangular pediment and eight
+free-standing columns (five Ionic, three Corinthian) — the elements the GPO portico actually has.
+
 ## How it works
 
 1. **Holistic style** — a ResNet34 classifies the whole image; the classes come from

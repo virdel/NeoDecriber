@@ -1,0 +1,45 @@
+NeoDecriber result
+=================
+image   : E:\code\NeoDecriber\Dublin.jpg
+source  : E:\code\NeoDecriber\weights
+device  : cpu
+time    : 2026-10-25 11:57:00
+
+[1] Holistic style classification
+    Neoclassism  99.98%
+    probabilities : Baroque 0.02% | Classicalism 0.00% | Gothic 0.00% | Neoclassism 99.98% | Renaissance 0.00% | Romanesque 0.00% | Greek 0.00% | Roman 0.00%
+
+[2] Imitation element combo detection   1 item (GreekTemple 1)
+      #  label             score  style                     crop
+      0  GreekTemple       99.8%  -                         element_combination/GreekTemple_0.jpg
+
+[3] Key element detection   2 items (colonnade 1, pediment 1)
+      #  label             score  style                     crop
+      0  colonnade         99.4%  -                         key_element/colonnade_0.jpg
+      1  pediment          99.1%  Triangular 97.3%          key_element/pediment_1.jpg
+
+[4] Arch element detection   no object detected
+
+[5] Column combination detection   no object detected
+
+[6] Single column detection   8 items (single_column 8)
+      #  label             score  style                     crop
+      0  single_column     99.8%  Corinthian 49.5%          single_column/single_column_0.jpg
+      1  single_column     99.7%  Ionic 96.0%               single_column/single_column_1.jpg
+      2  single_column     99.6%  Ionic 84.8%               single_column/single_column_2.jpg
+      3  single_column     99.6%  Corinthian 77.1%          single_column/single_column_3.jpg
+      4  single_column     99.5%  Ionic 71.8%               single_column/single_column_4.jpg
+      5  single_column     99.4%  Ionic 92.5%               single_column/single_column_5.jpg
+      6  single_column     97.0%  Ionic 53.5%               single_column/single_column_6.jpg
+      7  single_column     91.1%  Corinthian 73.7%          single_column/single_column_7.jpg
+
+Summary
+    style           : Neoclassism (99.98%)
+    elements        : single_column 8, GreekTemple 1, colonnade 1, pediment 1
+    implicit styles : -
+    elapsed         : 16.05 s
+
+Description
+    The building is Neoclassical (confidence 99.98%). The façade presents eight
+    free-standing columns (Ionic ×5, Corinthian ×3), a Greek-temple front, a colonnade,
+    and a pediment (Triangular).

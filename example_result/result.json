@@ -1,0 +1,270 @@
+{
+  "image": "E:\\code\\NeoDecriber\\Dublin.jpg",
+  "output_dir": "E:\\code\\NeoDecriber\\result",
+  "source_dir": "E:\\code\\NeoDecriber\\weights",
+  "device": "cpu",
+  "created_at": "2026-10-25T11:57:00",
+  "elapsed_seconds": 16.05,
+  "input_image": "input.jpg",
+  "style": {
+    "top": "Neoclassism",
+    "prob": 0.999792,
+    "classes": [
+      {
+        "name": "Baroque",
+        "prob": 0.00017
+      },
+      {
+        "name": "Classicalism",
+        "prob": 2e-06
+      },
+      {
+        "name": "Gothic",
+        "prob": 0.0
+      },
+      {
+        "name": "Neoclassism",
+        "prob": 0.999792
+      },
+      {
+        "name": "Renaissance",
+        "prob": 3e-05
+      },
+      {
+        "name": "Romanesque",
+        "prob": 1e-06
+      },
+      {
+        "name": "Greek",
+        "prob": 0.0
+      },
+      {
+        "name": "Roman",
+        "prob": 5e-06
+      }
+    ],
+    "is_neoclassism": true
+  },
+  "description": "The building is Neoclassical (confidence 99.98%). The façade presents eight free-standing columns (Ionic ×5, Corinthian ×3), a Greek-temple front, a colonnade, and a pediment (Triangular).",
+  "stages": [
+    {
+      "task": 1,
+      "threshold": 0.5,
+      "annotated_image": "imitation element combo.jpg",
+      "detections": [
+        {
+          "label": "GreekTemple",
+          "score": 0.9975,
+          "bbox": [
+            1042.3,
+            926.0,
+            4112.3,
+            3294.9
+          ],
+          "crop": "element_combination/GreekTemple_0.jpg",
+          "style": null
+        }
+      ],
+      "title": "Imitation element combo detection",
+      "annotated_thumb": "report/imitation element combo.jpg"
+    },
+    {
+      "task": 2,
+      "threshold": 0.5,
+      "annotated_image": "key_element.jpg",
+      "detections": [
+        {
+          "label": "colonnade",
+          "score": 0.9936,
+          "bbox": [
+            1018.0,
+            1692.6,
+            4147.7,
+            3258.6
+          ],
+          "crop": "key_element/colonnade_0.jpg",
+          "style": null
+        },
+        {
+          "label": "pediment",
+          "score": 0.9909,
+          "bbox": [
+            1083.2,
+            946.8,
+            4133.1,
+            1523.2
+          ],
+          "crop": "key_element/pediment_1.jpg",
+          "style": {
+            "name": "Triangular",
+            "prob": 0.972775,
+            "implicit": null
+          }
+        }
+      ],
+      "title": "Key element detection",
+      "annotated_thumb": "report/key_element.jpg"
+    },
+    {
+      "task": 3,
+      "threshold": 0.5,
+      "annotated_image": null,
+      "detections": [],
+      "title": "Arch element detection"
+    },
+    {
+      "task": 4,
+      "threshold": 0.6,
+      "annotated_image": null,
+      "detections": [],
+      "title": "Column combination detection"
+    },
+    {
+      "task": 5,
+      "threshold": 0.5,
+      "annotated_image": "single_column.jpg",
+      "detections": [
+        {
+          "label": "single_column",
+          "score": 0.998,
+          "bbox": [
+            3788.6,
+            1736.1,
+            4143.9,
+            3225.5
+          ],
+          "crop": "single_column/single_column_0.jpg",
+          "style": {
+            "name": "Corinthian",
+            "prob": 0.495025,
+            "implicit": null
+          }
+        },
+        {
+          "label": "single_column",
+          "score": 0.9971,
+          "bbox": [
+            2714.2,
+            1719.0,
+            3027.5,
+            3253.1
+          ],
+          "crop": "single_column/single_column_1.jpg",
+          "style": {
+            "name": "Ionic",
+            "prob": 0.960181,
+            "implicit": null
+          }
+        },
+        {
+          "label": "single_column",
+          "score": 0.9957,
+          "bbox": [
+            1612.4,
+            1721.9,
+            1949.4,
+            3209.9
+          ],
+          "crop": "single_column/single_column_2.jpg",
+          "style": {
+            "name": "Ionic",
+            "prob": 0.848471,
+            "implicit": null
+          }
+        },
+        {
+          "label": "single_column",
+          "score": 0.9956,
+          "bbox": [
+            3250.6,
+            1699.7,
+            3595.1,
+            3251.5
+          ],
+          "crop": "single_column/single_column_3.jpg",
+          "style": {
+            "name": "Corinthian",
+            "prob": 0.771109,
+            "implicit": null
+          }
+        },
+        {
+          "label": "single_column",
+          "score": 0.9948,
+          "bbox": [
+            1061.2,
+            1725.3,
+            1415.1,
+            3190.2
+          ],
+          "crop": "single_column/single_column_4.jpg",
+          "style": {
+            "name": "Ionic",
+            "prob": 0.717838,
+            "implicit": null
+          }
+        },
+        {
+          "label": "single_column",
+          "score": 0.994,
+          "bbox": [
+            2178.2,
+            1698.0,
+            2486.2,
+            3267.5
+          ],
+          "crop": "single_column/single_column_5.jpg",
+          "style": {
+            "name": "Ionic",
+            "prob": 0.924544,
+            "implicit": null
+          }
+        },
+        {
+          "label": "single_column",
+          "score": 0.9701,
+          "bbox": [
+            1278.1,
+            1839.0,
+            1532.5,
+            3213.3
+          ],
+          "crop": "single_column/single_column_6.jpg",
+          "style": {
+            "name": "Ionic",
+            "prob": 0.534811,
+            "implicit": null
+          }
+        },
+        {
+          "label": "single_column",
+          "score": 0.9107,
+          "bbox": [
+            3653.8,
+            1860.0,
+            3915.3,
+            3220.6
+          ],
+          "crop": "single_column/single_column_7.jpg",
+          "style": {
+            "name": "Corinthian",
+            "prob": 0.737457,
+            "implicit": null
+          }
+        }
+      ],
+      "title": "Single column detection",
+      "annotated_thumb": "report/single_column.jpg"
+    }
+  ],
+  "summary": {
+    "total_detections": 11,
+    "counts": {
+      "GreekTemple": 1,
+      "colonnade": 1,
+      "pediment": 1,
+      "single_column": 8
+    },
+    "implicit_styles": []
+  }
+}

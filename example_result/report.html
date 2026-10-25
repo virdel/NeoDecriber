@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NeoDecriber result</title>
+<style>
+:root {
+  --bg: #f6f4f0; --card: #fff; --ink: #1d1c1a; --muted: #6f6a62;
+  --line: #e3ded5; --accent: #9a5b33; --mark: #c2410c;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.6 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+a { color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 32px 24px 72px; }
+.top {
+  display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: baseline;
+  justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 16px;
+}
+.brand { font-family: Georgia, "Times New Roman", serif; font-size: 22px; letter-spacing: .01em; }
+.meta { color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.meta b { color: var(--ink); font-weight: 600; }
+.hero { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(300px, .6fr);
+        gap: 24px; margin: 28px 0 12px; align-items: start; }
+.hero figure { margin: 0; }
+.hero img, .annotated img {
+  width: 100%; display: block; border-radius: 6px; border: 1px solid var(--line);
+  background: #fff;
+}
+figcaption { color: var(--muted); font-size: 12px; margin-top: 6px; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 20px 22px; }
+.panel h3 { margin: 0 0 14px; font: 600 13px/1.3 inherit; letter-spacing: .08em;
+            text-transform: uppercase; color: var(--muted); }
+.style-big { font-family: Georgia, "Times New Roman", serif; font-size: 30px; line-height: 1.2; }
+.style-prob { color: var(--accent); font-size: 20px; margin-left: 8px; }
+.bars { margin: 14px 0 18px; }
+.bar-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 13px; margin-bottom: 8px; }
+.bar-track { grid-column: 1 / -1; height: 5px; background: #efeae2; border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+.stats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.pill { background: #f2ede6; border-radius: 999px; padding: 3px 10px; font-size: 12.5px; }
+.pill small { color: var(--muted); }
+.notice { background: #fdf3e7; border: 1px solid #f0d9bf; color: #7c4a17;
+          border-radius: 6px; padding: 12px 16px; margin: 18px 0 0; font-size: 14px; }
+.desc { margin: 20px 0 4px; padding: 18px 22px; background: var(--card);
+        border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0;
+        font: 16.5px/1.65 Georgia, "Times New Roman", serif; }
+.stage { margin-top: 44px; border-top: 1px solid var(--line); padding-top: 24px; }
+.stage h2 { margin: 0; font: 600 19px/1.35 Georgia, "Times New Roman", serif; }
+.badge { display: inline-block; margin-left: 10px; font: 500 12px/1 inherit;
+         color: var(--muted); background: #f1ece4; border-radius: 999px; padding: 5px 10px; vertical-align: 2px; }
+.stage-body { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+              gap: 22px; margin-top: 16px; align-items: start; }
+.annotated { position: relative; }
+.overlay { position: absolute; border: 2px solid var(--mark); background: rgba(194, 65, 12, .12);
+           display: none; pointer-events: none; border-radius: 2px; }
+.overlay.on { display: block; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip { border: 1px solid var(--line); background: var(--card); color: var(--muted);
+        border-radius: 999px; padding: 4px 11px; font-size: 12.5px; cursor: pointer; }
+.chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.crops { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.crop { margin: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+        background: var(--card); cursor: pointer; }
+.crop img { width: 100%; height: 92px; object-fit: cover; display: block; background: #f4f1ec; }
+.crop figcaption { margin: 0; padding: 6px 8px; font-size: 11.5px; line-height: 1.35; color: var(--muted); }
+.crop figcaption b { color: var(--ink); font-weight: 600; }
+.crop.selected { outline: 2px solid var(--accent); outline-offset: -2px; }
+.empty { color: var(--muted); font-size: 14px; margin: 10px 0 0; }
+footer { margin-top: 56px; border-top: 1px solid var(--line); padding-top: 16px;
+         color: var(--muted); font-size: 12.5px; }
+footer code { background: #f1ece4; padding: 1px 5px; border-radius: 4px; }
+@media (max-width: 860px) {
+  .hero, .stage-body { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="wrap"><header class="top"><div class="brand">NeoDecriber result</div><div class="meta"><span>device <b>cpu</b></span><span>elapsed <b>16.05 s</b></span><span>created <b>2026-10-25T11:57:00</b></span></div></header><section class="hero"><figure><img src="input.jpg" alt="input image"><figcaption>E:\code\NeoDecriber\Dublin.jpg</figcaption></figure><div class="panel"><h3>Holistic style</h3><div class="style-big">Neoclassism<span class="style-prob">99.98%</span></div><div class="bars"><div class="bar-row"><span>Baroque</span><span>0.02%</span><div class="bar-track"><div class="bar-fill" style="width:0.4%"></div></div></div><div class="bar-row"><span>Classicalism</span><span>0.00%</span><div class="bar-track"><div class="bar-fill" style="width:0.4%"></div></div></div><div class="bar-row"><span>Gothic</span><span>0.00%</span><div class="bar-track"><div class="bar-fill" style="width:0.4%"></div></div></div><div class="bar-row"><span>Neoclassism</span><span>99.98%</span><div class="bar-track"><div class="bar-fill" style="width:100.0%"></div></div></div><div class="bar-row"><span>Renaissance</span><span>0.00%</span><div class="bar-track"><div class="bar-fill" style="width:0.4%"></div></div></div><div class="bar-row"><span>Romanesque</span><span>0.00%</span><div class="bar-track"><div class="bar-fill" style="width:0.4%"></div></div></div><div class="bar-row"><span>Greek</span><span>0.00%</span><div class="bar-track"><div class="bar-fill" style="width:0.4%"></div></div></div><div class="bar-row"><span>Roman</span><span>0.00%</span><div class="bar-track"><div class="bar-fill" style="width:0.4%"></div></div></div></div><h3>Summary</h3><div class="stats"><span class="pill">11 elements</span><span class="pill">single_column <small>×8</small></span><span class="pill">GreekTemple <small>×1</small></span><span class="pill">colonnade <small>×1</small></span><span class="pill">pediment <small>×1</small></span></div></div></section><blockquote class="desc">The building is Neoclassical (confidence 99.98%). The façade presents eight free-standing columns (Ionic ×5, Corinthian ×3), a Greek-temple front, a colonnade, and a pediment (Triangular).</blockquote><section class="stage"><h2>[2] Imitation element combo detection<span class="badge">1 item</span></h2><div class="stage-body"><figure class="annotated"><a href="imitation%20element%20combo.jpg" target="_blank" rel="noopener"><img src="report/imitation%20element%20combo.jpg" alt="Imitation element combo detection" loading="lazy"></a><div class="overlay"></div><figcaption>Click an element to highlight its box; click the image to open it full size.</figcaption></figure><div><div class="chips"><button class="chip on" data-label="">All (1)</button><button class="chip" data-label="GreekTemple">GreekTemple (1)</button></div><div class="crops"><figure class="crop" data-label="GreekTemple" data-bbox="1042.3,926.0,4112.3,3294.9" title="GreekTemple #0 · 99.75%"><img src="element_combination/GreekTemple_0.jpg" alt="GreekTemple" loading="lazy"><figcaption><b>GreekTemple</b> 99.75%</figcaption></figure></div></div></div></section><section class="stage"><h2>[3] Key element detection<span class="badge">2 items</span></h2><div class="stage-body"><figure class="annotated"><a href="key_element.jpg" target="_blank" rel="noopener"><img src="report/key_element.jpg" alt="Key element detection" loading="lazy"></a><div class="overlay"></div><figcaption>Click an element to highlight its box; click the image to open it full size.</figcaption></figure><div><div class="chips"><button class="chip on" data-label="">All (2)</button><button class="chip" data-label="colonnade">colonnade (1)</button><button class="chip" data-label="pediment">pediment (1)</button></div><div class="crops"><figure class="crop" data-label="colonnade" data-bbox="1018.0,1692.6,4147.7,3258.6" title="colonnade #0 · 99.36%"><img src="key_element/colonnade_0.jpg" alt="colonnade" loading="lazy"><figcaption><b>colonnade</b> 99.36%</figcaption></figure><figure class="crop" data-label="pediment" data-bbox="1083.2,946.8,4133.1,1523.2" title="pediment #1 · 99.09%"><img src="key_element/pediment_1.jpg" alt="pediment" loading="lazy"><figcaption><b>pediment</b> 99.09%<br>Triangular 97.28%</figcaption></figure></div></div></div></section><section class="stage"><h2>[4] Arch element detection<span class="badge">no object detected</span></h2><p class="empty">No element above the threshold.</p></section><section class="stage"><h2>[5] Column combination detection<span class="badge">no object detected</span></h2><p class="empty">No element above the threshold.</p></section><section class="stage"><h2>[6] Single column detection<span class="badge">8 items</span></h2><div class="stage-body"><figure class="annotated"><a href="single_column.jpg" target="_blank" rel="noopener"><img src="report/single_column.jpg" alt="Single column detection" loading="lazy"></a><div class="overlay"></div><figcaption>Click an element to highlight its box; click the image to open it full size.</figcaption></figure><div><div class="chips"><button class="chip on" data-label="">All (8)</button><button class="chip" data-label="single_column">single_column (8)</button></div><div class="crops"><figure class="crop" data-label="single_column" data-bbox="3788.6,1736.1,4143.9,3225.5" title="single_column #0 · 99.80%"><img src="single_column/single_column_0.jpg" alt="single_column" loading="lazy"><figcaption><b>single_column</b> 99.80%<br>Corinthian 49.50%</figcaption></figure><figure class="crop" data-label="single_column" data-bbox="2714.2,1719.0,3027.5,3253.1" title="single_column #1 · 99.71%"><img src="single_column/single_column_1.jpg" alt="single_column" loading="lazy"><figcaption><b>single_column</b> 99.71%<br>Ionic 96.02%</figcaption></figure><figure class="crop" data-label="single_column" data-bbox="1612.4,1721.9,1949.4,3209.9" title="single_column #2 · 99.57%"><img src="single_column/single_column_2.jpg" alt="single_column" loading="lazy"><figcaption><b>single_column</b> 99.57%<br>Ionic 84.85%</figcaption></figure><figure class="crop" data-label="single_column" data-bbox="3250.6,1699.7,3595.1,3251.5" title="single_column #3 · 99.56%"><img src="single_column/single_column_3.jpg" alt="single_column" loading="lazy"><figcaption><b>single_column</b> 99.56%<br>Corinthian 77.11%</figcaption></figure><figure class="crop" data-label="single_column" data-bbox="1061.2,1725.3,1415.1,3190.2" title="single_column #4 · 99.48%"><img src="single_column/single_column_4.jpg" alt="single_column" loading="lazy"><figcaption><b>single_column</b> 99.48%<br>Ionic 71.78%</figcaption></figure><figure class="crop" data-label="single_column" data-bbox="2178.2,1698.0,2486.2,3267.5" title="single_column #5 · 99.40%"><img src="single_column/single_column_5.jpg" alt="single_column" loading="lazy"><figcaption><b>single_column</b> 99.40%<br>Ionic 92.45%</figcaption></figure><figure class="crop" data-label="single_column" data-bbox="1278.1,1839.0,1532.5,3213.3" title="single_column #6 · 97.01%"><img src="single_column/single_column_6.jpg" alt="single_column" loading="lazy"><figcaption><b>single_column</b> 97.01%<br>Ionic 53.48%</figcaption></figure><figure class="crop" data-label="single_column" data-bbox="3653.8,1860.0,3915.3,3220.6" title="single_column #7 · 91.07%"><img src="single_column/single_column_7.jpg" alt="single_column" loading="lazy"><figcaption><b>single_column</b> 91.07%<br>Corinthian 73.75%</figcaption></figure></div></div></div></section><footer>Output <code>E:\code\NeoDecriber\result</code> &nbsp;·&nbsp; weights <code>E:\code\NeoDecriber\weights</code> &nbsp;·&nbsp; data <a href="result.json">result.json</a> &nbsp;·&nbsp; report <a href="result.txt">result.txt</a></footer></div>
+<script>
+(function () {
+  function percent(value, total) { return (value / (total || 1)) * 100 + '%'; }
+  document.querySelectorAll('.stage').forEach(function (stage) {
+    var img = stage.querySelector('.annotated img');
+    var overlay = stage.querySelector('.overlay');
+    var cards = Array.prototype.slice.call(stage.querySelectorAll('.crop'));
+    if (!img || !overlay || !cards.length) return;
+
+    stage.querySelectorAll('.chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        stage.querySelectorAll('.chip').forEach(function (c) { c.classList.remove('on'); });
+        chip.classList.add('on');
+        var label = chip.dataset.label || '';
+        cards.forEach(function (card) {
+          card.style.display = (!label || card.dataset.label === label) ? '' : 'none';
+        });
+      });
+    });
+
+    cards.forEach(function (card) {
+      card.addEventListener('click', function () {
+        var box = card.dataset.bbox.split(',').map(Number);
+        var w = img.naturalWidth || 1, h = img.naturalHeight || 1;
+        overlay.style.left = percent(box[0], w);
+        overlay.style.top = percent(box[1], h);
+        overlay.style.width = percent(box[2] - box[0], w);
+        overlay.style.height = percent(box[3] - box[1], h);
+        overlay.classList.add('on');
+        cards.forEach(function (c) { c.classList.remove('selected'); });
+        card.classList.add('selected');
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
