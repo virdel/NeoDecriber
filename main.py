@@ -26,12 +26,14 @@ import argparse
 import json
 import shutil
 import sys
+import textwrap
 import time
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Sequence
 
+import describe
 import html_report
 
 REPO_ROOT = Path(__file__).resolve().parent
@@ -316,7 +318,7 @@ def _implicit_text(counter: Counter) -> str:
     )
 
 
-def build_report(meta: dict, style: dict, stages: Sequence[dict]) -> List[str]:
+def build_report(meta: dict, style: dict, stages: Sequence[dict], description: str) -> List[str]:
     """生成 result.txt 的行列表。"""
     lines = [
         "NeoDecriber result",
@@ -363,10 +365,15 @@ def build_report(meta: dict, style: dict, stages: Sequence[dict]) -> List[str]:
     lines.append(f"    elements        : {_counts_text(counts) if counts else '-'}")
     lines.append(f"    implicit styles : {_implicit_text(implicit) if implicit else '-'}")
     lines.append(f"    elapsed         : {meta['elapsed']:.2f} s")
+
+    lines.append("")
+    lines.append("Description")
+    for line in textwrap.wrap(description, width=86, break_on_hyphens=False) or [""]:
+        lines.append("    " + line)
     return lines
 
 
-def build_payload(meta: dict, style: dict, stages: Sequence[dict]) -> dict:
+def build_payload(meta: dict, style: dict, stages: Sequence[dict], description: str) -> dict:
     """生成 result.json 的内容。"""
     all_detections = [detection for stage in stages for detection in stage["detections"]]
     counts = Counter(detection["label"] for detection in all_detections)
@@ -381,6 +388,7 @@ def build_payload(meta: dict, style: dict, stages: Sequence[dict]) -> dict:
         "elapsed_seconds": round(meta["elapsed"], 2),
         "input_image": meta.get("input_image"),
         "style": style,
+        "description": description,
         "stages": list(stages),
         "summary": {
             "total_detections": len(all_detections),
@@ -484,14 +492,21 @@ def main(args: argparse.Namespace) -> int:
 
     txt_path = output_dir / RESULT_TXT
     json_path = output_dir / RESULT_JSON
-    payload = build_payload(meta, style, stages)
-    txt_path.write_text("\n".join(build_report(meta, style, stages)) + "\n", encoding="utf-8")
+    description = describe.describe(style, stages)
+    payload = build_payload(meta, style, stages, description)
+    txt_path.write_text(
+        "\n".join(build_report(meta, style, stages, description)) + "\n", encoding="utf-8"
+    )
     json_path.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     report_path = html_report.write(output_dir, payload)
 
+    print(RULE)
+    print("Description")
+    for line in textwrap.wrap(description, width=90, break_on_hyphens=False):
+        print("  " + line)
     print(RULE)
     print(STAR)
     print("Detection complete!")

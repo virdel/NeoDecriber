@@ -56,6 +56,9 @@ figcaption { color: var(--muted); font-size: 12px; margin-top: 6px; }
 .pill small { color: var(--muted); }
 .notice { background: #fdf3e7; border: 1px solid #f0d9bf; color: #7c4a17;
           border-radius: 6px; padding: 12px 16px; margin: 18px 0 0; font-size: 14px; }
+.desc { margin: 20px 0 4px; padding: 18px 22px; background: var(--card);
+        border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0;
+        font: 16.5px/1.65 Georgia, "Times New Roman", serif; }
 .stage { margin-top: 44px; border-top: 1px solid var(--line); padding-top: 24px; }
 .stage h2 { margin: 0; font: 600 19px/1.35 Georgia, "Times New Roman", serif; }
 .badge { display: inline-block; margin-left: 10px; font: 500 12px/1 inherit;
@@ -274,6 +277,9 @@ def render(payload: dict) -> str:
             "so element detection was skipped.</p>"
         )
 
+    description = payload.get("description")
+    description_block = f'<blockquote class="desc">{_esc(description)}</blockquote>' if description else ""
+
     footer = (
         f"<footer>Output <code>{_esc(payload.get('output_dir', '-'))}</code> &nbsp;·&nbsp; "
         f"weights <code>{_esc(payload.get('source_dir', '-'))}</code> &nbsp;·&nbsp; "
@@ -289,6 +295,7 @@ def render(payload: dict) -> str:
         '<div class="wrap">'
         f'<header class="top"><div class="brand">{title}</div><div class="meta">{meta}</div></header>'
         f"{_hero(payload)}"
+        f"{description_block}"
         f"{notice}"
         f"{stages}"
         f"{footer}"
