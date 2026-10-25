@@ -58,7 +58,7 @@ def filter_low_thresh_1(boxes, scores, classes, category_index, thresh, box_to_d
             else:
                 class_name = 'N/A'
             box_to_label_map[box]=str(class_name)
-            box_to_score_map[box]=str(int(100*scores[i]))
+            box_to_score_map[box]=float(scores[i])
             display_str = str(class_name) # class name
             display_str = '{}_{}'.format(display_str,i)
             box_to_display_str_map[box].append(display_str)
@@ -127,16 +127,18 @@ def draw_box(image, boxes, classes, scores, category_index, thresh=0.5, line_thi
         draw_text(draw, box_to_display_str_map, box, left, right, top, bottom, color,font_size)
 
 def get_element_images(image, boxes, classes, scores, category_index, thresh=0.5):
+    """按阈值裁剪目标，返回 (裁剪图, 名字, 类别, 置信度, 边界框) 五个等长列表。"""
 
     box_to_display_str_map = collections.defaultdict(list)
     box_to_color_map = collections.defaultdict(str)
     box_to_label_map = collections.defaultdict(str)
-    box_to_score_map = collections.defaultdict(str)
+    box_to_score_map = collections.defaultdict(float)
     filter_low_thresh_1(boxes, scores, classes, category_index, thresh, box_to_display_str_map, box_to_color_map,box_to_label_map,box_to_score_map)
     crop_imgs=[]
     string_list=[]
     labels=[]
-    scores=[]
+    score_list=[]
+    box_list=[]
 
     for i,(box, color) in enumerate(box_to_color_map.items()):
         xmin, ymin, xmax, ymax = box
@@ -146,8 +148,7 @@ def get_element_images(image, boxes, classes, scores, category_index, thresh=0.5
         crop_imgs.append(img_new)
         string_list.append(box_to_display_str_map[box][0])
         labels.append(box_to_label_map[box])
-        scores.append(box_to_score_map[box])
+        score_list.append(box_to_score_map[box])
+        box_list.append(box)
 
-
-
-    return crop_imgs,string_list,labels,scores
+    return crop_imgs, string_list, labels, score_list, box_list

@@ -3,7 +3,7 @@
 示例:
     python main.py --img-path ./Dublin.jpg --output-dir ./result
 
-流程（与论文中的级联模型一致）:
+流程（与论文的级联模型一致）:
     1. 整体风格分类 (ResNet34)
     2. 仿古元素组合检测
     3. 关键元素检测
@@ -11,27 +11,37 @@
     5. 柱式组合检测
     6. 单柱检测
 
+输出:
+    <output-dir>/result.txt    人类可读报告（分节 + 表格 + 汇总）
+    <output-dir>/result.json   同一批数据的结构化版本，便于批量统计
+    <output-dir>/*.jpg         各阶段标注图
+    <output-dir>/<stage>/*.jpg 裁剪出的元素图
+
 所有相对路径的权重目录都相对本文件解析，因此可以在任意工作目录下运行。
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
 import sys
 import time
+from collections import Counter
+from datetime import datetime
 from pathlib import Path
-from typing import List, NamedTuple, Optional, Sequence
+from typing import Dict, List, NamedTuple, Optional, Sequence
 
 REPO_ROOT = Path(__file__).resolve().parent
 DEFAULT_SOURCE_DIR = REPO_ROOT / "source"
-RESULT_FILENAME = "result.txt"
+RESULT_TXT = "result.txt"
+RESULT_JSON = "result.json"
 RULE = "—" * 42
 STAR = "*" * 16
 
 
 class Stage(NamedTuple):
-    """一个元素检测阶段：任务号、权重子目录、控制台标题。"""
+    """一个元素检测阶段：任务号、权重子目录、控制台/报告标题。"""
 
     task_id: int
     weight_dir: str
@@ -39,11 +49,11 @@ class Stage(NamedTuple):
 
 
 STAGES = (
-    Stage(1, "imitation", "Imitation element combo detection:"),
-    Stage(2, "key_element", "Key element detection:"),
-    Stage(3, "arch", "Arch element detection:"),
-    Stage(4, "column_combination", "Column combination detection:"),
-    Stage(5, "single_column", "Single column detection:"),
+    Stage(1, "imitation", "Imitation element combo detection"),
+    Stage(2, "key_element", "Key element detection"),
+    Stage(3, "arch", "Arch element detection"),
+    Stage(4, "column_combination", "Column combination detection"),
+    Stage(5, "single_column", "Single column detection"),
 )
 
 # 仅在检测出对应标签时才会用到的子分类器，缺失只提示不拦截
@@ -220,17 +230,117 @@ def resolve_device(requested: str, torch):
 
 
 # --------------------------------------------------------------------------
+# 报告排版
+# --------------------------------------------------------------------------
+def _percent(value: float, digits: int = 2) -> str:
+    return f"{value * 100:.{digits}f}%"
+
+
+def _counts_text(counter: Counter) -> str:
+    return ", ".join(f"{name} {count}" for name, count in counter.most_common())
+
+
+def _style_text(style: Optional[dict]) -> str:
+    if not style:
+        return "-"
+    return f"{style['name']} {_percent(style['prob'], 1)}"
+
+
+def _implicit_counter(stages: Sequence[dict]) -> Counter:
+    counter: Counter = Counter()
+    for stage in stages:
+        for detection in stage["detections"]:
+            style = detection.get("style")
+            if style and style.get("implicit"):
+                counter[(style["implicit"], style["name"])] += 1
+    return counter
+
+
+def _implicit_text(counter: Counter) -> str:
+    return ", ".join(
+        f"{implicit} {count} ({name})" for (implicit, name), count in counter.most_common()
+    )
+
+
+def build_report(meta: dict, style: dict, stages: Sequence[dict]) -> List[str]:
+    """生成 result.txt 的行列表。"""
+    lines = [
+        "NeoDescriber result",
+        "=" * 17,
+        f"image   : {meta['image']}",
+        f"source  : {meta['source']}",
+        f"device  : {meta['device']}",
+        f"time    : {meta['time']}",
+        "",
+        "[1] Holistic style classification",
+        f"    {style['top']}  {_percent(style['prob'])}",
+        "    probabilities : " + " | ".join(
+            f"{item['name']} {_percent(item['prob'])}" for item in style["classes"]),
+    ]
+
+    for number, stage in enumerate(stages, start=2):
+        detections = stage["detections"]
+        if detections:
+            counts = Counter(detection["label"] for detection in detections)
+            heading = (f"[{number}] {stage['title']}   "
+                       f"{len(detections)} items ({_counts_text(counts)})")
+        else:
+            heading = f"[{number}] {stage['title']}   no object detected"
+        lines.append("")
+        lines.append(heading)
+        if not detections:
+            continue
+
+        lines.append(f"    {'#':>3}  {'label':<16}{'score':>7}  {'style':<26}crop")
+        for index, detection in enumerate(detections):
+            lines.append(
+                f"    {index:>3}  {detection['label']:<16}"
+                f"{_percent(detection['score'], 1):>7}  "
+                f"{_style_text(detection['style']):<26}{detection['crop']}"
+            )
+
+    all_detections = [detection for stage in stages for detection in stage["detections"]]
+    counts = Counter(detection["label"] for detection in all_detections)
+    implicit = _implicit_counter(stages)
+
+    lines.append("")
+    lines.append("Summary")
+    lines.append(f"    style           : {style['top']} ({_percent(style['prob'])})")
+    lines.append(f"    elements        : {_counts_text(counts) if counts else '-'}")
+    lines.append(f"    implicit styles : {_implicit_text(implicit) if implicit else '-'}")
+    lines.append(f"    elapsed         : {meta['elapsed']:.2f} s")
+    return lines
+
+
+def build_payload(meta: dict, style: dict, stages: Sequence[dict]) -> dict:
+    """生成 result.json 的内容。"""
+    all_detections = [detection for stage in stages for detection in stage["detections"]]
+    counts = Counter(detection["label"] for detection in all_detections)
+    implicit = _implicit_counter(stages)
+
+    return {
+        "image": meta["image"],
+        "output_dir": meta["output_dir"],
+        "source_dir": meta["source"],
+        "device": meta["device"],
+        "created_at": meta["time_iso"],
+        "elapsed_seconds": round(meta["elapsed"], 2),
+        "style": style,
+        "stages": list(stages),
+        "summary": {
+            "total_detections": len(all_detections),
+            "counts": dict(counts),
+            "implicit_styles": [
+                {"implicit": implicit_name, "class": class_name, "count": count}
+                for (implicit_name, class_name), count in implicit.most_common()
+            ],
+        },
+    }
+
+
+# --------------------------------------------------------------------------
 # 主流程
 # --------------------------------------------------------------------------
-def write_image_header(txt_path: Path, img_path: Path) -> None:
-    print(STAR)
-    print("Writing image information...")
-    with open(txt_path, "w", encoding="utf-8") as f:
-        f.write("image path: " + str(img_path))
-        f.write("\n")
-    print("Done")
-
-
 def main(args: argparse.Namespace) -> int:
     img_path = Path(args.img_path).expanduser().resolve()
     output_dir = Path(args.output_dir).expanduser().resolve()
@@ -252,58 +362,84 @@ def main(args: argparse.Namespace) -> int:
         return 0
 
     output_dir = prepare_output_dir(output_dir, output_plan)
-    txt_path = output_dir / RESULT_FILENAME
 
     # 延迟导入：--help / --dry-run 不需要 PyTorch，缺失时也能给出明确提示
     try:
         import torch
-        from utils import classification, element_detection
+        import utils
     except ImportError as exc:
         raise SystemExit(f"导入依赖失败（{exc}），请先执行: pip install -r requirements.txt")
 
     device = resolve_device(args.device, torch)
     print(f"Using {device.type} device.")
-
     print(f"图片: {img_path}")
     print(f"输出: {output_dir}")
 
-    timings = []
-
-    write_image_header(txt_path, img_path)
+    started_at = datetime.now()
+    started = time.perf_counter()
+    timings: List[tuple] = []
 
     print(RULE)
     print("Holistic style classification:")
-    started = time.perf_counter()
-    status = classification(str(img_path), device, str(txt_path), str(source_dir / "holistic_style"))
-    timings.append(("Holistic style classification", time.perf_counter() - started))
+    step = time.perf_counter()
+    style = utils.predict_style(str(img_path), device, str(source_dir / "holistic_style"))
+    timings.append(("Holistic style classification", time.perf_counter() - step))
+    print(f"  {style['top']}  {_percent(style['prob'])}")
 
-    if not status:
+    stages: List[dict] = []
+    if not style["is_neoclassism"]:
         print("风格分类结果不是 Neoclassism，跳过元素检测。")
     else:
         for stage in STAGES:
             print(RULE)
-            print(stage.title)
-            started = time.perf_counter()
-            element_detection(
+            print(stage.title + ":")
+            step = time.perf_counter()
+            result = utils.detect_elements(
                 str(img_path),
                 device,
                 str(output_dir),
-                str(txt_path),
                 str(source_dir / stage.weight_dir),
                 stage.task_id,
                 args.line_thickness,
                 args.font_size,
             )
-            timings.append((stage.title.rstrip(":"), time.perf_counter() - started))
+            timings.append((stage.title, time.perf_counter() - step))
+            result["title"] = stage.title
+            stages.append(result)
+            if result["detections"]:
+                counts = Counter(d["label"] for d in result["detections"])
+                print(f"  {len(result['detections'])} items ({_counts_text(counts)})")
+            else:
+                print("  no object detected")
+
+    elapsed = time.perf_counter() - started
+    meta = {
+        "image": str(img_path),
+        "output_dir": str(output_dir),
+        "source": str(source_dir),
+        "device": str(device),
+        "time": started_at.strftime("%Y-%m-%d %H:%M:%S"),
+        "time_iso": started_at.isoformat(timespec="seconds"),
+        "elapsed": elapsed,
+    }
+
+    txt_path = output_dir / RESULT_TXT
+    json_path = output_dir / RESULT_JSON
+    txt_path.write_text("\n".join(build_report(meta, style, stages)) + "\n", encoding="utf-8")
+    json_path.write_text(
+        json.dumps(build_payload(meta, style, stages), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     print(RULE)
     print(STAR)
     print("Detection complete!")
     print(STAR)
     print(f"结果文件: {txt_path}")
+    print(f"          {json_path}")
     for title, seconds in timings:
         print(f"  {title:<36}{seconds:6.2f}s")
-    print(f"  {'Total':<36}{sum(s for _, s in timings):6.2f}s")
+    print(f"  {'Total':<36}{elapsed:6.2f}s")
     return 0
 
 

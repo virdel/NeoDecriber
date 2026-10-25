@@ -1,9 +1,7 @@
-"""推理工具：模型缓存、整体风格分类、元素检测与元素风格分类。
+"""推理工具：模型缓存、整体风格分类、元素检测与元素风格细分。
 
-与论文的级联流程对应：
-    整体风格分类 -> 各阶段 Faster R-CNN 元素检测 -> 裁剪图上的 ResNet34 风格细分。
-
-模型按「权重目录 + 设备」缓存复用，避免每张裁剪图都重新构建并加载一次网络。
+本模块只做计算与图片产出（标注图、裁剪图），把结果组织成字典返回；
+result.txt / result.json 的排版由 main.py 负责。
 """
 
 from __future__ import annotations
@@ -34,23 +32,17 @@ _DETECT_TRANSFORM = transforms.Compose([transforms.ToTensor()])
 class TaskConfig(NamedTuple):
     """一个检测任务的输出配置。"""
 
-    task_string: str     # 结果图文件名
-    image_dir: str       # 结果图子目录
-    txt_header: str      # 写入 result.txt 的标题
+    task_string: str     # 标注图文件名（不含扩展名）
+    image_dir: str       # 裁剪图子目录
     thresh: float        # 绘制与裁剪的置信度阈值
 
 
 TASK_CONFIGS: Dict[int, TaskConfig] = {
-    1: TaskConfig("imitation element combo", "element_combination",
-                  "imitation element combo:\n", 0.5),
-    2: TaskConfig("key_element", "key_element",
-                  "key element detection :\n", 0.5),
-    3: TaskConfig("arch_element", "arch_element",
-                  "arch element detection:\n", 0.5),
-    4: TaskConfig("column_combination", "column_combination",
-                  "column combination detection:\n", 0.6),
-    5: TaskConfig("single_column", "single_column",
-                  "single column detection:\n", 0.5),
+    1: TaskConfig("imitation element combo", "element_combination", 0.5),
+    2: TaskConfig("key_element", "key_element", 0.5),
+    3: TaskConfig("arch_element", "arch_element", 0.5),
+    4: TaskConfig("column_combination", "column_combination", 0.6),
+    5: TaskConfig("single_column", "single_column", 0.5),
 }
 
 # 元素标签 -> 子分类器权重目录（与检测权重目录同级）
@@ -94,6 +86,20 @@ def _softmax_predict(model: torch.nn.Module, batch: torch.Tensor) -> torch.Tenso
     with torch.no_grad():
         logits = model(batch)
     return torch.softmax(logits, dim=1).cpu()
+
+
+def _style_predictions(probs: torch.Tensor, class_dict: dict) -> List[dict]:
+    """把一批 softmax 概率转成 [{'name', 'prob', 'implicit'}]。"""
+    predictions = []
+    for row in probs:
+        index = int(torch.argmax(row).item())
+        name = class_dict[str(index)]
+        predictions.append({
+            "name": name,
+            "prob": round(float(row[index].item()), 6),
+            "implicit": IMPLICIT_STYLES.get(name),
+        })
+    return predictions
 
 
 # --------------------------------------------------------------------------
@@ -173,56 +179,29 @@ def clear_model_cache() -> None:
 
 
 # --------------------------------------------------------------------------
-# 分类
+# 整体风格分类
 # --------------------------------------------------------------------------
-def classification(img_path: str, device: torch.device, txt_path: str, data_root: str) -> int:
-    """整体风格分类，结果写入 txt_path，返回 1 表示新古典主义。"""
+def predict_style(img_path: str, device: torch.device, data_root: str) -> dict:
+    """整体风格分类，返回 {'top', 'prob', 'classes', 'is_neoclassism'}。"""
     model, class_dict = _CACHE.classifier(data_root, device)
 
-    img = _to_tensor(Image.open(img_path), _CLASSIFY_TRANSFORM)
-    predict = _softmax_predict(model, img.to(device)).squeeze(0)
-
-    predict_cla = int(torch.argmax(predict).item())
-    print_res = "class: {}   prob: {:.3}".format(class_dict[str(predict_cla)],
-                                                 predict[predict_cla].item())
-
-    for i in range(len(predict)):
-        print("class: {:10}   prob: {:.3}".format(class_dict[str(i)],
-                                                  predict[i].item()))
-
-    with open(txt_path, "a", encoding="utf-8") as f:
-        f.write("Holistic style classification：\n    ")
-        f.write(print_res)
-        f.write("\n    Probability of each category：\n")
-        for i in range(len(predict)):
-            f.write("       class: {:10}   prob: {:.3} \n".format(class_dict[str(i)],
-                                                                  predict[i].item()))
-
-    return 1 if class_dict[str(predict_cla)] == "Neoclassism" else 0
-
-
-def _classification_text(probs: torch.Tensor, class_dict: dict) -> str:
-    """把一张图的 softmax 概率格式化成 result.txt 中的一行。"""
-    predict_cla = int(torch.argmax(probs).item())
-    name = class_dict[str(predict_cla)]
-    text = "--->class: {}   prob: {:.3}".format(name, probs[predict_cla].item())
-    style = IMPLICIT_STYLES.get(name)
-    if style:
-        return text + "   implicit style: " + style
-    return text
-
-
-def element_classification(img_path: str, device: torch.device, data_root: str) -> str:
-    """单张裁剪图的元素风格分类，返回写入 result.txt 的文本。"""
-    model, class_dict = _CACHE.classifier(data_root, device)
     img = _to_tensor(Image.open(img_path), _CLASSIFY_TRANSFORM)
     probs = _softmax_predict(model, img.to(device))[0]
-    return _classification_text(probs, class_dict)
+
+    classes = [{"name": class_dict[str(i)], "prob": round(float(probs[i].item()), 6)}
+               for i in range(len(probs))]
+    best = max(classes, key=lambda item: item["prob"])
+    return {
+        "top": best["name"],
+        "prob": best["prob"],
+        "classes": classes,
+        "is_neoclassism": best["name"] == "Neoclassism",
+    }
 
 
-def classify_images(images: Sequence[Image.Image], device: torch.device,
-                    data_root: str) -> List[str]:
-    """批量分类多张裁剪图，返回与输入顺序一致的文本列表。
+def classify_crops(images: Sequence[Image.Image], device: torch.device,
+                   data_root: str) -> List[dict]:
+    """批量分类多张裁剪图，返回与输入顺序一致的风格列表。
 
     一次前向即可处理同类的所有裁剪图，避免逐张推理的开销。
     """
@@ -230,8 +209,7 @@ def classify_images(images: Sequence[Image.Image], device: torch.device,
         return []
     model, class_dict = _CACHE.classifier(data_root, device)
     batch = torch.cat([_to_tensor(img, _CLASSIFY_TRANSFORM) for img in images], dim=0)
-    probs = _softmax_predict(model, batch.to(device))
-    return [_classification_text(p, class_dict) for p in probs]
+    return _style_predictions(_softmax_predict(model, batch.to(device)), class_dict)
 
 
 # --------------------------------------------------------------------------
@@ -267,17 +245,10 @@ def _split_pediment(predictions: dict, category_index: dict):
             np.array(kept_scores))
 
 
-def element_detection(img_path: str, device: torch.device, save_dir: str, txt_path: str,
-                      data_root: str, task: int, line_thickness: int,
-                      font_size: int) -> List[list]:
-    """执行一个阶段的元素检测，返回 [标签, 裁剪图路径] 列表。"""
+def detect_elements(img_path: str, device: torch.device, save_dir: str, data_root: str,
+                    task: int, line_thickness: int, font_size: int) -> dict:
+    """执行一个阶段的元素检测，返回该阶段的结构化结果。"""
     config = TASK_CONFIGS[task]
-
-    img_save_dir = os.path.join(save_dir, config.image_dir)
-    os.makedirs(img_save_dir, exist_ok=True)
-    with open(txt_path, "a", encoding="utf-8") as f:
-        f.write(config.txt_header)
-
     model, class_dict = _CACHE.detector(data_root, device)
     category_index = {v: k for k, v in class_dict.items()}
 
@@ -287,64 +258,61 @@ def element_detection(img_path: str, device: torch.device, save_dir: str, txt_pa
     with torch.no_grad():
         predictions = model(img.to(device))[0]
 
-    predict_boxes, predict_classes, predict_scores = _split_pediment(predictions, category_index)
+    boxes, classes, scores = _split_pediment(predictions, category_index)
+    items = get_element_images(original_img, boxes, classes, scores,
+                               category_index, thresh=config.thresh)
 
-    crop_imgs, string_list, labels, scores = get_element_images(
-        original_img, predict_boxes, predict_classes, predict_scores,
-        category_index, thresh=config.thresh)
+    stage = {
+        "task": task,
+        "threshold": config.thresh,
+        "annotated_image": None,
+        "detections": [],
+    }
+    if not items[0]:
+        return stage
 
-    if not labels:
-        print("No object detected!")
-        with open(txt_path, "a", encoding="utf-8") as f:
-            f.write("   No object detected!\n")
-        return []
-
-    draw_box(original_img,
-             predict_boxes, predict_classes, predict_scores, category_index,
+    draw_box(original_img, boxes, classes, scores, category_index,
              thresh=config.thresh,
              line_thickness=line_thickness,
              font_size=font_size)
     original_img.save(os.path.join(save_dir, config.task_string + ".jpg"))
+    stage["annotated_image"] = config.task_string + ".jpg"
 
-    for crop, name in zip(crop_imgs, string_list):
-        crop.save(os.path.join(img_save_dir, name + ".jpg"))
+    crop_dir = os.path.join(save_dir, config.image_dir)
+    os.makedirs(crop_dir, exist_ok=True)
 
-    # 同一子分类器的裁剪图合并成一次前向；文本仍按检测顺序写回
-    texts: List[str] = [""] * len(crop_imgs)
+    crop_imgs, names, labels, item_scores, item_boxes = items
+    detections = []
+    for crop, name, label, score, box in zip(crop_imgs, names, labels, item_scores, item_boxes):
+        crop_file = name + ".jpg"
+        crop.save(os.path.join(crop_dir, crop_file))
+        detections.append({
+            "label": label,
+            "score": round(float(score), 4),
+            "bbox": [round(float(value), 1) for value in box],
+            "crop": os.path.relpath(os.path.join(crop_dir, crop_file), save_dir).replace(os.sep, "/"),
+            "style": None,
+        })
+
+    # 同一子分类器的裁剪图合并成一次前向
     groups: "OrderedDict[Optional[str], List[int]]" = OrderedDict()
-    for index, label in enumerate(labels):
-        groups.setdefault(CLASSIFIER_DIRS.get(label), []).append(index)
+    for index, detection in enumerate(detections):
+        groups.setdefault(CLASSIFIER_DIRS.get(detection["label"]), []).append(index)
 
     for classifier_dir, indices in groups.items():
         if classifier_dir is None:
             continue
         weights_dir = os.path.join(os.path.dirname(os.path.abspath(data_root)), classifier_dir)
         try:
-            results = classify_images([crop_imgs[i] for i in indices], device, weights_dir)
+            styles = classify_crops([crop_imgs[i] for i in indices], device, weights_dir)
         except FileNotFoundError as exc:
             print(f"[warn] 跳过 {classifier_dir} 风格细分: {exc}")
             continue
-        for index, text in zip(indices, results):
-            texts[index] = text
+        for index, style in zip(indices, styles):
+            detections[index]["style"] = style
 
-    return_info = []
-    with open(txt_path, "a", encoding="utf-8") as f:
-        for name, label, score, text, crop in zip(string_list, labels, scores, texts, crop_imgs):
-            crop_path = os.path.join(img_save_dir, name + ".jpg")
-            f.write("    ")
-            f.write(name)
-            f.write("    ")
-            f.write("score:" + score)
-            f.write("    ")
-            f.write(text)
-            f.write("    ")
-            f.write("--->img_path:" + crop_path)
-            f.write("\n")
-
-            if label in ("colonnade", "arcade"):
-                return_info.append([label, crop_path])
-
-    return return_info
+    stage["detections"] = detections
+    return stage
 
 
 # --------------------------------------------------------------------------

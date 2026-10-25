@@ -40,6 +40,29 @@ USAGE: main.py --img-path [path-to-img]  --output-dir  [path-to-outputdir]
         	python main.py   --img-path ./Dublin.jpg  --output-dir  ./result
 </code>
 
+<h5>Options</h5>
+<pre>
+--img-path PATH        image to describe (required)
+--output-dir DIR       result folder (default ./result)
+--device DEVICE        cuda:0 / cpu (falls back to cpu when CUDA is unavailable)
+--source-dir DIR       model weights folder (default &lt;project&gt;/source)
+--overwrite            clear an existing output folder (otherwise files are kept)
+--dry-run              validate arguments and weights, print the plan, load no model
+--line_thickness N     bounding-box line width (default 4)
+--font_size N          label font size (default 10)
+</pre>
+
+<h5>Output</h5>
+<p>Everything is written to the folder given by <code>--output-dir</code>:</p>
+<ul>
+  <li><code>result.txt</code> — human-readable report: style probabilities, one section per
+      detection stage with a detection table, and an overall summary.</li>
+  <li><code>result.json</code> — the same data as structured JSON (per element: label, score,
+      bounding box, crop file, fine-grained style), suitable for batch statistics.</li>
+  <li><code>*.jpg</code> and <code>&lt;stage&gt;/*.jpg</code> — annotated stage images and
+      cropped element images.</li>
+</ul>
+
 
 <hr width="20%" align="left"/>
 <br/>
