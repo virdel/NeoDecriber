@@ -1,8 +1,6 @@
 import collections
 import PIL.ImageDraw as ImageDraw
 import PIL.ImageFont as ImageFont
-import matplotlib.pyplot as plt
-import numpy as np
 
 STANDARD_COLORS = [
     'AliceBlue', 'Chartreuse', 'Aqua', 'Aquamarine', 'Azure', 'Beige', 'Bisque',
@@ -52,7 +50,6 @@ def filter_low_thresh_1(boxes, scores, classes, category_index, thresh, box_to_d
     #遍历每个box
     for i in range(boxes.shape[0]):
         # 如果得分超过thresh
-        print()
         if scores[i] > thresh:
             box = tuple(boxes[i].tolist())  # numpy -> list -> tuple
 
@@ -70,16 +67,24 @@ def filter_low_thresh_1(boxes, scores, classes, category_index, thresh, box_to_d
         else:
             continue  # 网络输出概率已经排序过，当遇到一个不满足后面的肯定不满足
 
+def _text_size(font, text):
+    """返回 (宽, 高)。Pillow >= 9.2 用 getbbox，Pillow 10 已删除 getsize。"""
+    if hasattr(font, "getbbox"):
+        left, top, right, bottom = font.getbbox(text)
+        return right - left, bottom - top
+    return font.getsize(text)  # 旧版 Pillow 回退
+
+
 def draw_text(draw, box_to_display_str_map, box, left, right, top, bottom, color,font_size):
     try:
-        font = ImageFont.truetype('arial.ttf', font_size)
+        font = ImageFont.truetype('arial.ttf', int(font_size))
     except IOError:
         font = ImageFont.load_default()
 
     # If the total height of the display strings added to the top of the bounding
     # box exceeds the top of the image, stack the strings below the bounding box
     # instead of above.
-    display_str_heights = [font.getsize(ds)[1] for ds in box_to_display_str_map[box]]
+    display_str_heights = [_text_size(font, ds)[1] for ds in box_to_display_str_map[box]]
     # Each display_str has a top and bottom margin of 0.05x.
     # print(display_str_heights)
     total_display_str_height = (1 + 2 * 0.05) * sum(display_str_heights)
@@ -92,8 +97,8 @@ def draw_text(draw, box_to_display_str_map, box, left, right, top, bottom, color
     # Reverse list and print from bottom to top.
     for display_str in box_to_display_str_map[box][::-1]:
         # print(display_str)
-        text_width, text_height = font.getsize(display_str)
-        margin = np.ceil(0.05 * text_height)
+        text_width, text_height = _text_size(font, display_str)
+        margin = 0.05 * text_height
         draw.rectangle([(left, text_bottom - text_height - 2 * margin),
                         (left + text_width, text_bottom)], fill=color)
         draw.text((left + margin, text_bottom - text_height - margin),

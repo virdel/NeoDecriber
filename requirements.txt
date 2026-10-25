@@ -1,7 +1,14 @@
-lxml
-matplotlib
-numpy==1.17.0
-tqdm==4.42.1
-torch
-torchvision
-Pillow
+# NeoDescriber 推理依赖
+#
+# 已在 Python 3.8 上验证通过：
+#   torch 1.8.1 / torchvision 0.9.1 / numpy 1.19.5 / Pillow 9.5.0
+#   torch 2.4.1 / torchvision 0.19.1 / numpy 1.24.4 / Pillow 10.4.0
+#
+# GPU 用户请先按 https://pytorch.org/get-started/locally/ 安装与 CUDA 版本匹配的
+# torch 和 torchvision，再执行 `pip install -r requirements.txt`，pip 会复用已装版本。
+#
+# 注意：numpy 限制在 2.0 以下，旧版 torch 的二进制接口与 numpy 2.x 不兼容。
+numpy>=1.19,<2
+torch>=1.8
+torchvision>=0.9
+Pillow>=9.2
