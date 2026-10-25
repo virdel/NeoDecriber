@@ -1,73 +1,167 @@
-# NeoDescriber：Computer Vision and Rule-based Cascaded Model for Neoclassical Architecture Description
+# NeoDescriber
 
-  ### Introduction
-  Based on the combination of computer vision models and expert knowledge in Architecture, this paper proposes a novel model for the identification and description of Neoclassical buildings in an automatic way. This cascaded model treats the description of a monument’s style as a coarse-to-fine process, it can not only identify its holistic architectural style category, but also describe the distribution and combination of its featured architectural elements. Fig 2 shows the description of three example monuments respectively.
+Computer vision and rule-based cascaded model for describing neoclassical architecture.
 
-![architecture](./imageInReadme/architecture.png)
+Given a photo of a building, NeoDescriber first classifies its **holistic style**, then — when the
+building is neoclassical — detects its **architectural elements**, and finally describes their
+distribution, combination, and fine-grained style. The description is coarse-to-fine: one style
+label for the whole façade, then a list of the elements that carry it.
 
-<center>Fig.1 The framework and workflow for the style description model - NeoDescriber. Rounded boxes indicate element styles: B for Baroque, G for Gothic, R for Romanesque. </center>
+![Framework](imageInReadme/architecture.png)
 
-![architecture](./imageInReadme/example.png)
+*Fig. 1 — Framework and workflow. Rounded boxes indicate element styles: B for Baroque, G for
+Gothic, R for Romanesque.*
 
-<center>Fig.2 The description of three example monuments by NeoDescriber. From left to right, there are General Post Office (Dublin), Helsinki Cathedral, and the building of Shanghai Pudong Development Bank. </center>
+![Examples](imageInReadme/example.png)
 
-### Download  of Neural Network Weight
+*Fig. 2 — Descriptions of three monuments: General Post Office (Dublin), Helsinki Cathedral, and the
+Shanghai Pudong Development Bank building.*
 
+## Installation
 
+Requires Python 3.8–3.12 (verified on 3.8).
 
-### How to install 
-==NeoDescriber requires Python environment(>=3.7).==
-
-You can use the following command to install some packages in the NeoDescriber folder.
-
-``` shell
+```bash
 pip install -r requirements.txt
 ```
-### Download trained model weights
 
-<a href="https://drive.google.com/file/d/1hW6u_YmdBM2acwddWmhJkQ98PHm4y5Ys/view?usp=sharing">Click</a> to download weights, and copy the folder to the project folder. 
+`torch` and `torchvision` are installed from PyPI. For GPU inference, install the build matching
+your CUDA version first (see <https://pytorch.org/get-started/locally/>), then run the command above
+— pip keeps the versions you already have.
 
-### How to use
+## Model weights
 
-<p>You can find <i>main.py</i> in the script source folder.</p>
-<p><i>Note: we recommend absolute paths for folder paths in parameters.</i></p>
+Download the trained weights from
+[Google Drive](https://drive.google.com/file/d/1hW6u_YmdBM2acwddWmhJkQ98PHm4y5Ys/view?usp=sharing)
+and unzip them next to `main.py`, so that the folder layout is:
 
-<h5> main.py can be called with the following syntax:</h5>
-<code class="language-">
-USAGE: main.py --img-path [path-to-img]  --output-dir  [path-to-outputdir]
+```
+source/
+├── holistic_style/        class_indices.json   resNet34.pth
+├── imitation/             my_source_data_class2num.json   resNetFpn-model.pth
+├── key_element/           my_source_data_class2num.json   resNetFpn-model.pth
+├── arch/                  my_source_data_class2num.json   resNetFpn-model.pth
+├── column_combination/    my_source_data_class2num.json   resNetFpn-model.pth
+├── single_column/         my_source_data_class2num.json   resNetFpn-model.pth
+├── pediment/              class_indices.json   resNet34.pth
+├── tower/                 class_indices.json   resNet34.pth
+├── dome/                  class_indices.json   resNet34.pth
+├── Arch_classification/   class_indices.json   resNet34.pth
+└── column_order/          class_indices.json   resNet34.pth
+```
 
-        Example usage:
-        	python main.py   --img-path ./Dublin.jpg  --output-dir  ./result
-</code>
+`source/` is git-ignored because the weights are large. If you keep them elsewhere, pass
+`--source-dir`.
 
-<h5>Options</h5>
-<pre>
---img-path PATH        image to describe (required)
---output-dir DIR       result folder (default ./result)
---device DEVICE        cuda:0 / cpu (falls back to cpu when CUDA is unavailable)
---source-dir DIR       model weights folder (default &lt;project&gt;/source)
---overwrite            clear an existing output folder (otherwise files are kept)
---dry-run              validate arguments and weights, print the plan, load no model
---line_thickness N     bounding-box line width (default 4)
---font_size N          label font size (default 10)
-</pre>
+## Usage
 
-<h5>Output</h5>
-<p>Everything is written to the folder given by <code>--output-dir</code>:</p>
-<ul>
-  <li><code>result.txt</code> — human-readable report: style probabilities, one section per
-      detection stage with a detection table, and an overall summary.</li>
-  <li><code>result.json</code> — the same data as structured JSON (per element: label, score,
-      bounding box, crop file, fine-grained style), suitable for batch statistics.</li>
-  <li><code>*.jpg</code> and <code>&lt;stage&gt;/*.jpg</code> — annotated stage images and
-      cropped element images.</li>
-</ul>
+```bash
+python main.py --img-path ./Dublin.jpg --output-dir ./result
+```
 
+The run reports per-stage timings on the console and writes everything to `--output-dir`.
+Before the first real run you can check the setup without loading any model:
 
-<hr width="20%" align="left"/>
-<br/>
-Reference:<br/>
-  Qin, W., Chen, L., Zhang, B., Chen, W., Luo, H., NeoDescriber：Computer Vision and Rule-based Cascaded Model for Neoclassical Architecture Description.
+```bash
+python main.py --img-path ./Dublin.jpg --output-dir ./result --dry-run
+```
 
-  <p class=footer>
-    &copy; Copyright 2022  by <a href="http://ndc.hust.edu.cn">NDC at hust</a></p>
+### Options
+
+| Option | Description |
+| --- | --- |
+| `--img-path PATH` | Image to describe (required). |
+| `--output-dir DIR` | Result folder, default `./result`. |
+| `--device DEVICE` | `cuda:0` / `cpu`. Falls back to CPU when CUDA is unavailable. |
+| `--source-dir DIR` | Folder holding the weights, default `<project>/source`. |
+| `--overwrite` | Clear an existing output folder; without it existing files are kept. |
+| `--dry-run` | Validate arguments and weights, print the plan, load no model. |
+| `--line_thickness N` | Bounding-box line width, default 4. |
+| `--font_size N` | Label font size, default 10. |
+
+## Output
+
+Everything lands in `--output-dir`:
+
+```
+result.txt    human-readable report
+result.json   the same data as structured JSON
+*.jpg         annotated image per detection stage
+<stage>/*.jpg cropped element images
+```
+
+`result.txt` — style probabilities, one table per stage, and a summary:
+
+```
+[1] Holistic style classification
+    Neoclassism  99.97%
+    probabilities : Baroque 0.00% | Gothic 0.00% | Neoclassism 99.97%
+
+[2] Imitation element combo detection   92 items (arcade 91, arch 1)
+      #  label             score  style                     crop
+      0  arcade            74.0%  -                         element_combination/arcade_0.jpg
+      1  arch              51.0%  Semicircular 100.0%       element_combination/arch_1.jpg
+
+Summary
+    style           : Neoclassism (99.97%)
+    elements        : arcade 91, arch 1
+    implicit styles : -
+    elapsed         : 23.05 s
+```
+
+`result.json` keeps the same information with numbers, boxes and file paths, for batch statistics
+(one detection shown here):
+
+```json
+{
+  "image": "D:\\data\\test.jpg",
+  "style": {"top": "Neoclassism", "prob": 0.9997, "is_neoclassism": true,
+            "classes": [{"name": "Baroque", "prob": 0.0003}]},
+  "stages": [
+    {"task": 3, "title": "Arch element detection", "threshold": 0.5,
+     "annotated_image": "arch_element.jpg",
+     "detections": [
+       {"label": "arch", "score": 0.51, "bbox": [120.0, 80.0, 260.0, 400.0],
+        "crop": "arch_element/arch_0.jpg",
+        "style": {"name": "Pointed", "prob": 0.98, "implicit": "Gothic"}}
+     ]}
+  ],
+  "summary": {"total_detections": 1, "counts": {"arch": 1},
+              "implicit_styles": [{"implicit": "Gothic", "class": "Pointed", "count": 1}]}
+}
+```
+
+## How it works
+
+1. **Holistic style** — a ResNet34 classifies the whole image; the classes come from
+   `source/holistic_style/class_indices.json` (Baroque / Gothic / Neoclassism for the released
+   weights).
+2. **Element detection** — only if the top class is Neoclassism, five ResNet50-FPN Faster R-CNN
+   detectors run in sequence: imitation element combinations, key elements, arch elements, column
+   combinations, single columns. Only the largest pediment survives, because a façade has one.
+3. **Element style** — every detected element is cropped and passed to a task-specific ResNet34
+   (`pediment`, `tower`, `dome`, column order, arch type). Some element styles imply a secondary
+   style: `Pointed → Gothic`, `Broken/semicircular` and `Polygonal → Baroque`,
+   `Multilayer → Romanesque`.
+
+## Project layout
+
+```
+main.py            CLI, report formatting, result.json
+utils.py           model loading/caching, style prediction, element detection
+model.py           ResNet34 classifier and Faster R-CNN factory
+draw_box_utils.py  bounding boxes, labels, element crops
+backbone/          ResNet50-FPN backbone
+network_files/     Faster R-CNN implementation
+source/            model weights (not tracked)
+```
+
+## Citation
+
+Qin, W., Chen, L., Zhang, B., Chen, W., Luo, H. *NeoDescriber: Computer Vision and Rule-based
+Cascaded Model for Neoclassical Architecture Description.*
+
+---
+
+<p class=footer>
+&copy; Copyright 2022 by <a href="http://ndc.hust.edu.cn">NDC at HUST</a></p>
