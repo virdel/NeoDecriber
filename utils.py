@@ -54,13 +54,19 @@ CLASSIFIER_DIRS: Dict[str, str] = {
     "single_column": "column_order",
 }
 
-# 子分类器的隐含风格
-IMPLICIT_STYLES: Dict[str, str] = {
-    "Broken/semicircular": "Baroque",
-    "Polygonal": "Baroque",
-    "Pointed": "Gothic",
-    "Multilayer": "Romanesque",
+# 子分类器的隐含风格。权重里的类名大小写并不统一（如 "Multilayer" / "multilayer"），
+# 因此统一转小写后匹配。
+_IMPLICIT_STYLES: Dict[str, str] = {
+    "broken/semicircular": "Baroque",
+    "polygonal": "Baroque",
+    "pointed": "Gothic",
+    "multilayer": "Romanesque",
 }
+
+
+def implicit_style(class_name: str) -> Optional[str]:
+    """元素风格隐含的整体风格；没有对应关系时返回 None。"""
+    return _IMPLICIT_STYLES.get(class_name.lower())
 
 
 # --------------------------------------------------------------------------
@@ -97,7 +103,7 @@ def _style_predictions(probs: torch.Tensor, class_dict: dict) -> List[dict]:
         predictions.append({
             "name": name,
             "prob": round(float(row[index].item()), 6),
-            "implicit": IMPLICIT_STYLES.get(name),
+            "implicit": implicit_style(name),
         })
     return predictions
 

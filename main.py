@@ -286,6 +286,10 @@ def _percent(value: float, digits: int = 2) -> str:
     return f"{value * 100:.{digits}f}%"
 
 
+def _plural(count: int, word: str) -> str:
+    return f"{count} {word}" if count == 1 else f"{count} {word}s"
+
+
 def _counts_text(counter: Counter) -> str:
     return ", ".join(f"{name} {count}" for name, count in counter.most_common())
 
@@ -333,7 +337,7 @@ def build_report(meta: dict, style: dict, stages: Sequence[dict]) -> List[str]:
         if detections:
             counts = Counter(detection["label"] for detection in detections)
             heading = (f"[{number}] {stage['title']}   "
-                       f"{len(detections)} items ({_counts_text(counts)})")
+                       f"{_plural(len(detections), 'item')} ({_counts_text(counts)})")
         else:
             heading = f"[{number}] {stage['title']}   no object detected"
         lines.append("")
@@ -461,7 +465,7 @@ def main(args: argparse.Namespace) -> int:
             stages.append(result)
             if result["detections"]:
                 counts = Counter(d["label"] for d in result["detections"])
-                print(f"  {len(result['detections'])} items ({_counts_text(counts)})")
+                print(f"  {_plural(len(result['detections']), 'item')} ({_counts_text(counts)})")
             else:
                 print("  no object detected")
 

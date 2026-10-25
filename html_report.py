@@ -151,7 +151,8 @@ def _style_bars(classes: Iterable[dict]) -> str:
 
 
 def _summary_pills(summary: dict) -> str:
-    pills = [f'<span class="pill">{int(summary.get("total_detections", 0))} elements</span>']
+    total = int(summary.get("total_detections", 0))
+    pills = [f'<span class="pill">{total} {"element" if total == 1 else "elements"}</span>']
     for label, count in sorted(summary.get("counts", {}).items(), key=lambda kv: -kv[1]):
         pills.append(f'<span class="pill">{_esc(label)} <small>×{int(count)}</small></span>')
     for item in summary.get("implicit_styles", []):
@@ -225,7 +226,8 @@ def _stage(number: int, stage: dict) -> str:
     detections = stage["detections"]
     annotated = stage.get("annotated_image")
     if detections:
-        badge = f'<span class="badge">{len(detections)} items</span>'
+        count = len(detections)
+        badge = f'<span class="badge">{count} {"item" if count == 1 else "items"}</span>'
     else:
         badge = '<span class="badge">no object detected</span>'
 

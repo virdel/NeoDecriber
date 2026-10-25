@@ -7,6 +7,7 @@ venv/
 
 # 模型权重：README 要求把下载的权重解压到 source/，体积太大不入库
 source/
+weights/
 
 # 推理输出
 result/
