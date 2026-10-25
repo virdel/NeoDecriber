@@ -1,4 +1,4 @@
-"""NeoDescriber 命令行入口：识别并描述新古典主义建筑。
+"""NeoDecriber 命令行入口：识别并描述新古典主义建筑。
 
 示例:
     python main.py --img-path ./Dublin.jpg --output-dir ./result
@@ -31,6 +31,8 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, NamedTuple, Optional, Sequence
+
+import html_report
 
 REPO_ROOT = Path(__file__).resolve().parent
 DEFAULT_SOURCE_DIR = REPO_ROOT / "source"
@@ -205,6 +207,26 @@ def prepare_output_dir(output_dir: Path, plan: OutputPlan) -> Path:
     return output_dir
 
 
+def copy_input_image(img_path: Path, output_dir: Path, max_side: int = 1600) -> Optional[str]:
+    """把原图缩放后复制进输出目录，让 HTML 报告脱离原图路径也能打开。
+
+    报告只需要看整体效果，因此限制长边像素，避免几千万像素的原图拖慢页面。
+    """
+    try:
+        from PIL import Image
+
+        with Image.open(img_path) as image:
+            image = image.convert("RGB")
+            if max(image.size) > max_side:
+                image.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+            target = output_dir / "input.jpg"
+            image.save(target, quality=88)
+    except Exception as exc:  # 图片损坏、格式不支持等都不该中断推理
+        print(f"[warn] 无法生成报告用原图: {exc}")
+        return None
+    return target.name
+
+
 def resolve_device(requested: str, torch):
     """把用户给的设备名解析成可用的 torch.device，必要时回退并提示。"""
     if not torch.cuda.is_available():
@@ -227,6 +249,34 @@ def resolve_device(requested: str, torch):
             index = 0
         device = torch.device(f"cuda:{index}")
     return device
+
+
+def make_report_images(output_dir: Path, stages: Sequence[dict], max_side: int = 1400) -> None:
+    """为 HTML 报告生成缩小的标注图，避免整页加载几十兆的原图。"""
+    try:
+        from PIL import Image
+    except ImportError:
+        return
+
+    folder = output_dir / "report"
+    for stage in stages:
+        name = stage.get("annotated_image")
+        if not name:
+            continue
+        source = output_dir / name
+        if not source.is_file():
+            continue
+        try:
+            with Image.open(source) as image:
+                image = image.convert("RGB")
+                if max(image.size) > max_side:
+                    image.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+                folder.mkdir(exist_ok=True)
+                target = folder / Path(name).name
+                image.save(target, quality=80)
+            stage["annotated_thumb"] = f"report/{Path(name).name}"
+        except Exception as exc:  # 缩略图失败不该影响主结果
+            print(f"[warn] 无法生成报告缩略图 {name}: {exc}")
 
 
 # --------------------------------------------------------------------------
@@ -265,7 +315,7 @@ def _implicit_text(counter: Counter) -> str:
 def build_report(meta: dict, style: dict, stages: Sequence[dict]) -> List[str]:
     """生成 result.txt 的行列表。"""
     lines = [
-        "NeoDescriber result",
+        "NeoDecriber result",
         "=" * 17,
         f"image   : {meta['image']}",
         f"source  : {meta['source']}",
@@ -325,6 +375,7 @@ def build_payload(meta: dict, style: dict, stages: Sequence[dict]) -> dict:
         "device": meta["device"],
         "created_at": meta["time_iso"],
         "elapsed_seconds": round(meta["elapsed"], 2),
+        "input_image": meta.get("input_image"),
         "style": style,
         "stages": list(stages),
         "summary": {
@@ -370,6 +421,8 @@ def main(args: argparse.Namespace) -> int:
     except ImportError as exc:
         raise SystemExit(f"导入依赖失败（{exc}），请先执行: pip install -r requirements.txt")
 
+    input_image = copy_input_image(img_path, output_dir)
+
     device = resolve_device(args.device, torch)
     print(f"Using {device.type} device.")
     print(f"图片: {img_path}")
@@ -413,6 +466,7 @@ def main(args: argparse.Namespace) -> int:
                 print("  no object detected")
 
     elapsed = time.perf_counter() - started
+    make_report_images(output_dir, stages)
     meta = {
         "image": str(img_path),
         "output_dir": str(output_dir),
@@ -421,15 +475,18 @@ def main(args: argparse.Namespace) -> int:
         "time": started_at.strftime("%Y-%m-%d %H:%M:%S"),
         "time_iso": started_at.isoformat(timespec="seconds"),
         "elapsed": elapsed,
+        "input_image": input_image,
     }
 
     txt_path = output_dir / RESULT_TXT
     json_path = output_dir / RESULT_JSON
+    payload = build_payload(meta, style, stages)
     txt_path.write_text("\n".join(build_report(meta, style, stages)) + "\n", encoding="utf-8")
     json_path.write_text(
-        json.dumps(build_payload(meta, style, stages), ensure_ascii=False, indent=2) + "\n",
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    report_path = html_report.write(output_dir, payload)
 
     print(RULE)
     print(STAR)
@@ -437,6 +494,7 @@ def main(args: argparse.Namespace) -> int:
     print(STAR)
     print(f"结果文件: {txt_path}")
     print(f"          {json_path}")
+    print(f"可视化  : {report_path}")
     for title, seconds in timings:
         print(f"  {title:<36}{seconds:6.2f}s")
     print(f"  {'Total':<36}{elapsed:6.2f}s")

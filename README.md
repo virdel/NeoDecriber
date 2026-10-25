@@ -1,8 +1,10 @@
-# NeoDescriber
+# NeoDecriber
 
-Computer vision and rule-based cascaded model for describing neoclassical architecture.
+Computer vision and rule-based cascaded model for describing neoclassical architecture. This is the
+code release for the paper *NeoDescriber: Computer Vision and Rule-based Cascaded Model for
+Neoclassical Architecture Description*.
 
-Given a photo of a building, NeoDescriber first classifies its **holistic style**, then — when the
+Given a photo of a building, NeoDecriber first classifies its **holistic style**, then — when the
 building is neoclassical — detects its **architectural elements**, and finally describes their
 distribution, combination, and fine-grained style. The description is coarse-to-fine: one style
 label for the whole façade, then a list of the elements that carry it.
@@ -86,9 +88,17 @@ Everything lands in `--output-dir`:
 ```
 result.txt    human-readable report
 result.json   the same data as structured JSON
+report.html   interactive report — open it in any browser
+input.jpg     downscaled copy of the input image used by the report
+report/*.jpg  downscaled annotated images used by the report
 *.jpg         annotated image per detection stage
 <stage>/*.jpg cropped element images
 ```
+
+![HTML report](imageInReadme/report.jpg)
+
+*`report.html`: style probabilities, one card per stage, and the cropped elements. Click an
+element to highlight its box on the annotated image; click the image to open it full size.*
 
 `result.txt` — style probabilities, one table per stage, and a summary:
 

@@ -1,4 +1,4 @@
-# NeoDescriber 推理依赖
+# NeoDecriber 推理依赖
 #
 # 已在 Python 3.8 上验证通过：
 #   torch 1.8.1 / torchvision 0.9.1 / numpy 1.19.5 / Pillow 9.5.0
