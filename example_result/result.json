@@ -3,8 +3,8 @@
   "output_dir": "E:\\code\\NeoDecriber\\result",
   "source_dir": "E:\\code\\NeoDecriber\\weights",
   "device": "cpu",
-  "created_at": "2026-10-25T11:57:00",
-  "elapsed_seconds": 16.05,
+  "created_at": "2026-10-28T01:02:35",
+  "elapsed_seconds": 18.89,
   "input_image": "input.jpg",
   "style": {
     "top": "Neoclassism",
@@ -45,7 +45,7 @@
     ],
     "is_neoclassism": true
   },
-  "description": "The building is Neoclassical (confidence 99.98%). The façade presents eight free-standing columns (Ionic ×5, Corinthian ×3), a Greek-temple front, a colonnade, and a pediment (Triangular).",
+  "description": "This is a Neoclassical building. It has imitated Greek temple. It has 1 triangular pediment, 1 colonnade, and 8 single columns including 5 Ionic and 3 Corinthian column orders in the colonnade.",
   "stages": [
     {
       "task": 1,

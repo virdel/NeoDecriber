@@ -3,7 +3,7 @@ NeoDecriber result
 image   : E:\code\NeoDecriber\Dublin.jpg
 source  : E:\code\NeoDecriber\weights
 device  : cpu
-time    : 2026-10-25 11:57:00
+time    : 2026-10-28 01:02:35
 
 [1] Holistic style classification
     Neoclassism  99.98%
@@ -37,9 +37,9 @@ Summary
     style           : Neoclassism (99.98%)
     elements        : single_column 8, GreekTemple 1, colonnade 1, pediment 1
     implicit styles : -
-    elapsed         : 16.05 s
+    elapsed         : 18.89 s
 
 Description
-    The building is Neoclassical (confidence 99.98%). The façade presents eight
-    free-standing columns (Ionic ×5, Corinthian ×3), a Greek-temple front, a colonnade,
-    and a pediment (Triangular).
+    This is a Neoclassical building. It has imitated Greek temple. It has 1 triangular
+    pediment, 1 colonnade, and 8 single columns including 5 Ionic and 3 Corinthian column
+    orders in the colonnade.
